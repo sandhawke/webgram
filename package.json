@@ -1,0 +1,37 @@
+{
+  "name": "webgram",
+  "version": "0.0.1",
+  "description": "opinionated wrapper for websockets",
+  "main": "index.js",
+  "scripts": {
+    "test": "standard && tap --cov test[a-z0-9-_]*.js",
+    "coverage": "standard && tap --cov test[a-z0-9-_]*.js --coverage-report=lcov",
+    "watch": "watchify client.js -o static/bundle.js -v"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sandhawke/webgram.git"
+  },
+  "keywords": [
+    "websockets",
+    "datagram"
+  ],
+  "author": "Sandro Hawke (http://hawke.org/sandro)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/sandhawke/webgram/issues"
+  },
+  "homepage": "https://github.com/sandhawke/webgram#readme",
+  "dependencies": {
+    "debug": "^3.0.1",
+    "eventemitter3": "^2.0.3",
+    "express": "^4.15.4",
+    "level": "^1.7.0",
+    "ws": "^3.1.0"
+  },
+  "devDependencies": {
+    "tap": "^10.7.2",
+    "tape": "^4.8.0",
+    "watchify": "^3.9.0"
+  }
+}
