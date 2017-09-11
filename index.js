@@ -7,10 +7,10 @@ process.on('unhandledRejection', (reason, p) => {
 
 const http = require('http')
 const os = require('os')
-const path = require('path')
-const crypto = require('crypto')
+// const path = require('path')
+// const crypto = require('crypto')
 const express = require('express')
-//const logger = require('morgan')
+// const logger = require('morgan')
 const debug = require('debug')('server')
 const WebSocket = require('ws')
 const level = require('level')
@@ -27,7 +27,6 @@ class Server extends EventEmitter {
 
   start () {
     return new Promise((resolve, reject) => {
-
       // if https...
       this.hServer = http.createServer(this.app)
       this.wServer = new WebSocket.Server({
@@ -41,14 +40,13 @@ class Server extends EventEmitter {
           // todo: buffer if needed, survive disconnect/reconnect
           ws.send(JSON.stringify(args))
         }
-        
+
         ws.on('message', messageRaw => {
           debug('new message', messageRaw)
           let message
           try {
             message = JSON.parse(messageRaw)
-          }
-          catch (e) {
+          } catch (e) {
             console.error('badly formatted message ignored')
             return
           }
@@ -56,17 +54,18 @@ class Server extends EventEmitter {
           this.emit(message[0], client, ...message.slice(1))
         })
       })
-      
+
       this.hServer.listen(this.port, () => {
         this.assignedPort = this.hServer.address().port
         if (this.proxied) {
-          this.siteURL = 'https://' + (this.hostname || os.hostname())          
+          this.siteURL = 'https://' + (this.hostname || os.hostname())
         } else {
           this.siteURL = 'http://' + (this.hostname || os.hostname())
           if (this.assignedPort !== 80) {
             this.siteURL += ':' + this.assignedPort
           }
         }
+        this.address = this.siteURL.replace(/^http/, 'ws')
         debug('Running at: ', this.siteURL)
         resolve()
       })
@@ -88,14 +87,13 @@ class Client extends EventEmitter {
     Object.assign(this, options)
     this.buffer = []
     this.socket = new WebSocket(this.address)
-    
+
     this.socket.on('message', messageRaw => {
       debug('client sees new message', messageRaw)
       let message
       try {
         message = JSON.parse(messageRaw)
-      }
-      catch (e) {
+      } catch (e) {
         console.error('badly formatted message ignored')
         return
       }
@@ -117,13 +115,16 @@ class Client extends EventEmitter {
       this.socket.send(JSON.stringify(args))
     }
   }
+
+  close () {
+    this.socket.close()
+  }
 }
 
 module.exports.Server = Server
 module.exports.Client = Client
 
-  
-/* 
+/*
 function start (config = {}) {
   return new Promise((resolve, reject) => {
 
@@ -151,7 +152,7 @@ function start (config = {}) {
           debug('wrote userData', userData)
         })
       }
-      
+
       ws.on('message', (message) => {
         console.log('MESSAGE', JSON.stringify(message))
         const [op, ...args] = JSON.parse(message)
@@ -190,7 +191,7 @@ function start (config = {}) {
         }
       });
     });
-    
+
     server.listen(port, () => {
       const a = server.address()
       port = a.port
@@ -217,7 +218,6 @@ function start (config = {}) {
       res.send('Hello, session=' + JSON.stringify(req.session))
     })
 
-    
   })
 }
 
@@ -240,4 +240,3 @@ function levelDump(db) {
 }
 
 */
-

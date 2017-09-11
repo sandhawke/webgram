@@ -4,8 +4,8 @@
   "description": "opinionated wrapper for websockets",
   "main": "index.js",
   "scripts": {
-    "test": "standard && tap --cov test[a-z0-9-_]*.js",
-    "coverage": "standard && tap --cov test[a-z0-9-_]*.js --coverage-report=lcov",
+    "test": "standard && tap --cov test*.js",
+    "coverage": "standard && tap --cov test*.js --coverage-report=lcov",
     "watch": "watchify client.js -o static/bundle.js -v"
   },
   "repository": {
