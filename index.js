@@ -7,14 +7,14 @@ process.on('unhandledRejection', (reason, p) => {
 
 const http = require('http')
 const os = require('os')
-// const path = require('path')
-// const crypto = require('crypto')
+const crypto = require('crypto')
 const express = require('express')
 // const logger = require('morgan')
 const debug = require('debug')('server')
 const WebSocket = require('ws')
 const level = require('level')
 const EventEmitter = require('eventemitter3')
+const doToken = require('./nodejs_token')
 
 class Server extends EventEmitter {
   constructor (config) {
@@ -23,6 +23,22 @@ class Server extends EventEmitter {
     if (!this.app) this.app = express()
     if (!this.db) this.db = level(this.dbPath || 'db.level')
     if (!this.port) this.port = 0
+
+    this.on('clientToken', (remote, token) => {
+      if (token === 'requested') {
+        // send a token
+        token = crypto.randomBytes(64).toString('base64')
+        console.log('new user, assigning userToken', token)
+        remote.send('setClientToken', token)
+        remote.save('firstVisitTime', new Date())
+      } else {
+        console.log('client offers return token', token)
+        remote.token = token  // allows client.load/save to work
+      }
+      this.emit('$ready', remote)
+      remote.save('lastVisitTime', new Date())
+      // maybe dig out and save the IP, too?
+    })
   }
 
   start () {
@@ -35,11 +51,7 @@ class Server extends EventEmitter {
       this.wServer.on('connection', ws => {
         // connection
         debug('new connection')
-        const client = {}
-        client.send = (...args) => {
-          // todo: buffer if needed, survive disconnect/reconnect
-          ws.send(JSON.stringify(args))
-        }
+        const remote = new Connection(ws, this.db)
 
         ws.on('message', messageRaw => {
           debug('new message', messageRaw)
@@ -51,7 +63,7 @@ class Server extends EventEmitter {
             return
           }
           debug('emitting', message[0], ...message.slice(1))
-          this.emit(message[0], client, ...message.slice(1))
+          this.emit(message[0], remote, ...message.slice(1))
         })
       })
 
@@ -106,6 +118,7 @@ class Client extends EventEmitter {
       }
       this.buffer = null
     })
+    doToken(this)
   }
 
   send (...args) {
@@ -240,3 +253,45 @@ function levelDump(db) {
 }
 
 */
+
+class Connection {
+  constructor (socket, db) {
+    this.socket = socket
+    this.db = db
+  }
+  send (...args) {
+    this.socket.send(JSON.stringify(args))
+  }
+
+  save (key, value) {
+    if (!this.token) {
+      throw Error('Connection.save() called before token known')
+    }
+    return this.db.put([this.token, key], JSON.stringify(value))
+  }
+
+  load (key, setDefault) {
+    return new Promise((resolve, reject) => {
+      if (!this.token) {
+        throw Error('Connection.load() called before token known')
+      }
+      this.db.get([this.token, key], (err, data) => {
+        if (err) {
+          if (err.notFound) {
+            if (setDefault) {
+              if (typeof setDefault === 'function') {
+                setDefault = setDefault(key)
+              }
+              this.save(key, setDefault)
+            }
+            resolve(setDefault)
+          } else {
+            reject(err)
+          }
+        } else {
+          resolve(JSON.parse(data))
+        }
+      })
+    })
+  }
+}

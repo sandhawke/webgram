@@ -30,3 +30,34 @@ test(async (t) => {
   })
   c.send('test', 123, 456)  // this is probably before connected
 })
+
+test('saveload', async (t) => {
+  t.plan(1)
+  class Server extends webgram.Server {
+    constructor () {
+      super({dbPath: 'db-test'})
+      this.on('$ready', async (client) => {
+        const oldvalue = await client.load('visits', 0)
+        console.log('visits', oldvalue)
+        client.save('visits', oldvalue + 1)
+      })
+      this.on('ping', (client, ...data) => {
+        client.send('pong', ...data)
+      })
+    }
+  }
+
+  const s = new Server()
+  await s.start() // need to wait for address
+
+  // console.log('address', s.address)
+  const c = new webgram.Client(s.address)
+  c.on('pong', () => {
+    c.close()
+    s.stop().then(() => {
+      t.pass()
+      t.end()
+    })
+  })
+  c.send('ping', 123, 456)
+})
