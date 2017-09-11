@@ -1,12 +1,11 @@
 An opinionated wrapper for websockets.
 
 My opinion:
-* From the perspective of client code or server code, every network is "unreliable".  So might as well code in terms of sending messages and receiving message, which might or might not arrive.  Much simpler state, really.  When things are working well, these are just websocket frames
-* Clients can easily authenticate themselves, just using a bearer token, so we handle that.  Actually identifying human users is left to you.
-* On the server, we store client-associated data in levelDB for you
-* We wrap all the webserver stuff, but hopefully expose the parts you need, for your own express routes, etc.  Haven't thought much about interactions with middleware.
+* The reliable-stream socket metaphor gets in the way, because it's not truly reliable, given the reality of the internet and remote issues. It's simpler the just think in terms of sending and receiving messages on a best-effort basis
+* The server recognizes clients that have visited before (if they choose, using a bearer token in localStorage), and persists data about each client for you, using levelDB.  Actually identifying human users is left to you.
+* We wrap the httpServer stuff, but hopefully expose the parts you need, for your own express routes, etc.  (Still needs https, with easy/automatic letsEncrypt usage when running as root.)
 
-So client is very simple:
+Typical client can be very simple:
 
 ```js
 const webgram = require('webgram')
@@ -44,7 +43,7 @@ s.start()
 ```
 
 ```sh
-# stop server with
+# stop server, in this silly example, with
 curl -X POST http://localhost:5678/shutdown
 ```
 
