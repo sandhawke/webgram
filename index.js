@@ -14,7 +14,7 @@ const debug = require('debug')('server')
 const level = require('level')
 const EventEmitter = require('eventemitter3')
 const doToken = require('./nodejs_token')
-const WebSocket = require('./nodejs_ws')
+const WebSocket = require('ws')
 
 class Server extends EventEmitter {
   constructor (config) {

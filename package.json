@@ -37,9 +37,5 @@
     "tape": "^4.8.0",
     "watchify": "^3.9.0"
   },
-  "browser": {
-    "nodejs_token": "browser_token",
-    "nodejs_ws": "browser_ws",
-    "./nodejs_ws": "./browser_ws"
-  }
+  "browser": "browser.js"
 }
