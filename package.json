@@ -28,6 +28,7 @@
     "eventemitter3": "^2.0.3",
     "express": "^4.15.4",
     "level": "^1.7.0",
+    "morgan": "^1.8.2",
     "node-localstorage": "^1.3.0",
     "ws": "^3.1.0"
   },
@@ -37,6 +38,8 @@
     "watchify": "^3.9.0"
   },
   "browser": {
-    "nodejs_token": "browser_token"
+    "nodejs_token": "browser_token",
+    "nodejs_ws": "browser_ws",
+    "./nodejs_ws": "./browser_ws"
   }
 }

@@ -7,3 +7,4 @@ static/bundle*
 static/assets/*
 .nyc*
 db.level
+db-test

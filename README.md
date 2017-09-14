@@ -18,7 +18,7 @@ c.on('test-response', (plus, minus) => {
 c.send('test', 123, 456)
 ```
 
-Running the browser, we can omit the address, and it'll figure it out
+Running in the browser, we can omit the address, and it'll figure it out
 from the page URL.
 
 Note that we don't need to pay attention to whether we're connected or

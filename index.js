@@ -9,12 +9,12 @@ const http = require('http')
 const os = require('os')
 const crypto = require('crypto')
 const express = require('express')
-// const logger = require('morgan')
+const morgan = require('morgan')
 const debug = require('debug')('server')
-const WebSocket = require('ws')
 const level = require('level')
 const EventEmitter = require('eventemitter3')
 const doToken = require('./nodejs_token')
+const WebSocket = require('./nodejs_ws')
 
 class Server extends EventEmitter {
   constructor (config) {
@@ -23,6 +23,15 @@ class Server extends EventEmitter {
     if (!this.app) this.app = express()
     if (!this.db) this.db = level(this.dbPath || 'db.level')
     if (!this.port) this.port = 0
+    if (!this.logger) this.logger = morgan
+    if (!this.root) this.root = './static'
+
+    if (!this.quiet) {
+      this.app.use(this.logger('short'))
+    }
+
+    this.app.use(express.static(this.root))
+    // {extensions: ['html', 'css']}))
 
     this.on('clientToken', (remote, token) => {
       if (token === 'requested') {
@@ -48,9 +57,9 @@ class Server extends EventEmitter {
       this.wServer = new WebSocket.Server({
         server: this.hServer
       })
-      this.wServer.on('connection', ws => {
+      this.wServer.on('connection', (ws, req) => {
         // connection
-        debug('new connection')
+        debug('new connection', req.connection.remoteAddress)
         const remote = new Connection(ws, this.db)
 
         ws.on('message', messageRaw => {
@@ -64,6 +73,9 @@ class Server extends EventEmitter {
           }
           debug('emitting', message[0], ...message.slice(1))
           this.emit(message[0], remote, ...message.slice(1))
+        })
+        ws.on('close', () => {
+          this.emit('$close', remote)
         })
       })
 
@@ -79,6 +91,9 @@ class Server extends EventEmitter {
         }
         this.address = this.siteURL.replace(/^http/, 'ws')
         debug('Running at: ', this.siteURL)
+        if (!this.quiet) {
+          console.log('Site available at', this.siteURL)
+        }
         resolve()
       })
     })
@@ -95,7 +110,14 @@ class Server extends EventEmitter {
 class Client extends EventEmitter {
   constructor (address, options) {
     super()
-    this.address = address
+    if (address) {
+      this.address = address
+    }
+    if (!this.address && typeof document === 'object') {
+      this.address = document.location.origin.replace(/^http/, 'ws')
+      console.log('computed my call-home address as', this.address)
+    }
+
     Object.assign(this, options)
     this.buffer = []
     this.socket = new WebSocket(this.address)
@@ -260,7 +282,9 @@ class Connection {
     this.db = db
   }
   send (...args) {
+    debug('trying to sent', ...args)
     this.socket.send(JSON.stringify(args))
+    debug('sent')
   }
 
   save (key, value) {
