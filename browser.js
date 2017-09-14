@@ -5,6 +5,9 @@
    luck figuring out how to get browserify not to include ws with my
    other approaches.  Maybe we can this and index.js can call some
    common stuff.
+
+   Retry logic is buggy right now -- it retries multiple times at once...
+
 */
 
 const EventEmitter = require('eventemitter3')
@@ -34,9 +37,15 @@ class Client extends EventEmitter {
 
     Object.assign(this, options)
     this.buffer = []
+    this.connected = false
+    this.connect()
+  }
+
+  connect (buffer) {
     this.socket = new window.WebSocket(this.address)
 
     this.socket.addEventListener('message', messageRaw => {
+      this.connected = true
       messageRaw = messageRaw.data // IN BROWSER
       // debug('client sees new message', messageRaw)
       let message
@@ -50,23 +59,41 @@ class Client extends EventEmitter {
       this.emit(...message)
     })
     this.socket.addEventListener('open', () => {
-      for (let item of this.buffer) {
+      console.log('$online')
+      this.emit('$online')
+      while (true) {
+        let item = this.buffer.shift()
+        if (!item) break
         this.socket.send(item)
       }
-      this.buffer = null
+      this.connected = true
+    })
+    this.socket.addEventListener('close', () => {
+      this.connected = false
+      console.log('websocket closed; retrying ...')
+      window.setTimeout(() => { this.connect(this.buffer) }, 5000)
+      // indicate upstream that we're offline?
+      this.emit('$offline')
+      console.log('$offline')
+    })
+    this.socket.addEventListener('error', (e) => {
+      this.connected = false
+      console.log('websocket error; retrying in 1s', e)
+      // window.setTimeout(() => { this.connect() }, 1000)
     })
     doToken(this)
   }
 
   send (...args) {
-    if (this.buffer) {
-      this.buffer.push(JSON.stringify(args))
-    } else {
+    if (this.connected) {
       this.socket.send(JSON.stringify(args))
+    } else {
+      this.buffer.push(JSON.stringify(args))
     }
   }
 
   close () {
+    this.connected = false
     this.socket.close()
   }
 }
