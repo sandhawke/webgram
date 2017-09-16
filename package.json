@@ -44,5 +44,5 @@
     "tape": "^4.8.0",
     "watchify": "^3.9.0"
   },
-  "browser": "browser.js"
+  "browser": "browser_client.js"
 }

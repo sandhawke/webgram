@@ -2,8 +2,9 @@ An opinionated wrapper for websockets.
 
 My opinion:
 * The reliable-stream socket metaphor gets in the way, because it's not truly reliable, given the reality of the internet and remote issues. It's simpler to just think in terms of sending and receiving messages on a best-effort basis
-* The server recognizes clients that have visited before (if they choose, using a bearer token in localStorage), and persists data about each client for you, using levelDB.  Actually identifying human users is left to you.
 * We wrap the httpServer stuff, but hopefully expose the parts you need, for your own express routes, etc.  (TODO: https, with easy/automatic letsEncrypt usage when running as root.)
+
+Authentication is available via separate package [webgram-logins](../webgram-logins)
 
 Typical client can be very simple:
 
@@ -31,10 +32,22 @@ The server is also quite simple:
 ```js
 const webgram = require('webgram')
 
+// port defaults to new-random-port if not specified, good for testing
 const s = new webgram.Server({port: 5678})
+server.on('$opened', conn => {
+   conn.on('$closed', () => {
+    ...
+   })
+   conn.on('whatever-message-you-want', ...)
+})
+
+// or without tracking clients:
 s.on('test', (client, a, b) => {
   client.send('test-response', a + b, a - b)
 })
+
+// it's also a normal express web server
+
 s.app.get('/hello', (req, res) => {
   res.send('Hello, World')
 })

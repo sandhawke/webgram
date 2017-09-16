@@ -11,7 +11,3 @@ conn.on('$pong', x => {
   // setTimeout(() => {document.location = 'http://hawke.org/'}, 1000)
 })
 conn.send('$ping', 100)
-
-conn.on('$login', userData => {
-  console.log('userData', userData)
-})

@@ -18,10 +18,7 @@ test(async (t) => {
       t.end()
     })
   })
-  // c.send('$ping', 'hello')  // this is probably before connected, so queued
-  c.on('$login', u => {
-    c.send('$ping', 'hello')
-  })
+  c.send('$ping', 'hello')  // this is probably before connected, so queued
 })
 
 test.skip(async (t) => {
