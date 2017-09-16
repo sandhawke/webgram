@@ -21,9 +21,11 @@ class Server extends EventEmitter {
     super()
     Object.assign(this, config)
     if (!this.app) this.app = express()
-    if (!this.db) this.db = level(this.dbPath || 'db.level', {
-      keyEncoding: 'json', valueEncoding: 'json'
-    })
+    if (!this.db) {
+      this.db = level(this.dbPath || 'db.level', {
+        keyEncoding: 'json', valueEncoding: 'json'
+      })
+    }
     if (!this.port) this.port = 0
     if (!this.logger) this.logger = morgan
     if (!this.root) this.root = './static'
@@ -42,7 +44,7 @@ class Server extends EventEmitter {
 
     this.on('$login', async (conn, auth) => {
       if (auth.create) {
-        delete auth.create 
+        delete auth.create
         await conn.createLogin(auth)
         conn.send('$login', conn.userData)
       } else {
@@ -90,7 +92,7 @@ class Server extends EventEmitter {
         const remote = new Connection(ws, this.db, this)
 
         this.emit('$connect', remote)
-        
+
         ws.on('message', messageRaw => {
           debug('new message: ', messageRaw)
           let message
@@ -175,7 +177,7 @@ class Connection extends EventEmitter {
     debug('SAVING', this.userData._uid, JSON.stringify(this.userData, null, 2))
     await put(this.db, this.userData._uid, this.userData)
   }
-  
+
   async createLogin (auth) {
     const _uid = await this.server.genUID()
     const _secret = crypto.randomBytes(64).toString('base64')
@@ -190,7 +192,7 @@ class Connection extends EventEmitter {
 
     // carry through some properties?
     if (auth._displayName) userData._displayName = auth._displayName
-    
+
     this.userData = userData
     await this.save()
   }
@@ -219,7 +221,7 @@ class Connection extends EventEmitter {
 
 // alas, right now the Promises support in leveldb isn't released
 
-function get(db, key) {
+function get (db, key) {
   return new Promise((resolve, reject) => {
     debug('doing get', key)
     db.get(key, (err, data) => {
@@ -229,7 +231,7 @@ function get(db, key) {
   })
 }
 
-function put(db, key, value) {
+function put (db, key, value) {
   return new Promise((resolve, reject) => {
     db.put(key, value, (err) => {
       if (err) reject(err)
@@ -240,5 +242,3 @@ function put(db, key, value) {
 
 module.exports.Server = Server
 module.exports.Client = require('./client').Client
-
-

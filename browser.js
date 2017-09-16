@@ -103,7 +103,7 @@ class Client extends EventEmitter {
       window.localStorage.setItem('logins', logins)
     })
 
-    this.userData  = JSON.parse(window.localStorage.getItem('currentLogin'))
+    this.userData = JSON.parse(window.localStorage.getItem('currentLogin'))
     if (!this.userData) {
       this.userData = { create: true }
     }

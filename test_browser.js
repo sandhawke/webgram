@@ -4,7 +4,7 @@ const test = require('tape')
 const browserify = require('browserify')
 const webgram = require('.')
 const opn = require('opn')
-const teen = require('teen_process')
+// const teen = require('teen_process')
 
 test(async (t) => {
   t.plan(1)
@@ -30,12 +30,12 @@ test(async (t) => {
   s.app.get('/bundle.js', (req, res) => {
     b.bundle().pipe(res)
   })
-  
+
   await s.start() // need to wait for address
 
   s.on('equal', (conn, a, b) => {
     console.log('called equal', a, b)
-    t.equal(a,b)
+    t.equal(a, b)
   })
 
   // let proc = new teen.SubProcess('firefox', ['--no-remote', '-P', 'plantohelp', s.siteURL])

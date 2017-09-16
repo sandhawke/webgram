@@ -60,11 +60,11 @@ class Client extends EventEmitter {
       throw Error('login failed: ' + fail)   // .msg?
     })
     this.on('$login', userData => {
-      fs.writeFileSync('./client-login-data.json', JSON.stringify(userData, null,2), {
+      fs.writeFileSync('./client-login-data.json', JSON.stringify(userData, null, 2), {
         encoding: 'utf8',
         mode: 0o600})
     })
-    
+
     if (!this.userData) {
       try {
         this.userData = JSON.parse(fs.readFileSync('./client-login-data.json', 'utf8'))
