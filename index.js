@@ -14,6 +14,7 @@ const debug = require('debug')('server')
 const level = require('level')
 const EventEmitter = require('eventemitter3')
 const WebSocket = require('ws')
+const enableDestroy = require('server-destroy')
 
 class Server extends EventEmitter {
   constructor (config) {
@@ -112,6 +113,7 @@ class Server extends EventEmitter {
       })
 
       this.hServer.listen(this.port, () => {
+        enableDestroy(this.hServer)
         this.assignedPort = this.hServer.address().port
         if (this.proxied) {
           this.siteURL = 'https://' + (this.hostname || os.hostname())
@@ -134,6 +136,8 @@ class Server extends EventEmitter {
   stop () {
     return new Promise((resolve, reject) => {
       debug('stopping', this.siteURL)
+      // this.hServer.destroy()
+      // console.log("DESTROY")
       this.hServer.close(() => { resolve() })
     })
   }

@@ -15,18 +15,6 @@
 
 const EventEmitter = require('eventemitter3')
 
-function doToken (client) {
-  let token
-  if (!token) {
-    token = window.localStorage.getItem('clientToken')
-  }
-  client.send('clientToken', token || 'requested')
-
-  client.on('setClientToken', token => {
-    window.localStorage.setItem('clientToken', token)
-  })
-}
-
 class Client extends EventEmitter {
   constructor (address, options) {
     super()
@@ -84,7 +72,7 @@ class Client extends EventEmitter {
       console.log('websocket error; retrying in 1s', e)
       // window.setTimeout(() => { this.connect() }, 1000)
     })
-    doToken(this)
+    if (this.login) this.login()
   }
 
   send (...args) {
@@ -98,6 +86,28 @@ class Client extends EventEmitter {
   close () {
     this.connected = false
     this.socket.close()
+  }
+
+  login () {
+    this.on('$login-failed', fail => {
+      throw Error('login failed: ' + fail)   // .msg?
+    })
+    this.on('$login', userData => {
+      window.localStorage.setItem('currentLogin', JSON.stringify(userData))
+
+      // Add it to a table of many saved logins to select among
+      let logins = window.localStorage.getItem('logins') || '{}'
+      logins = JSON.parse(logins)
+      logins[userData._uid] = userData
+      logins = JSON.stringify(logins)
+      window.localStorage.setItem('logins', logins)
+    })
+
+    this.userData  = JSON.parse(window.localStorage.getItem('currentLogin'))
+    if (!this.userData) {
+      this.userData = { create: true }
+    }
+    this.send('$login', this.userData)
   }
 }
 
