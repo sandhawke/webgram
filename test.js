@@ -5,6 +5,27 @@ const webgram = require('.')
 
 test(async (t) => {
   t.plan(1)
+  const s = new webgram.Server()
+  await s.start() // need to wait for address
+
+  // console.log('address', s.address)
+  const c = new webgram.Client(s.address)
+  c.on('$pong', (text) => {
+    console.log('test response to c1:', text)
+    t.equal(text, 'hello')
+    c.close()
+    s.stop().then(() => {
+      t.end()
+    })
+  })
+  // c.send('$ping', 'hello')  // this is probably before connected, so queued
+  c.on('$login', u => {
+    c.send('$ping', 'hello') 
+  })
+})
+
+test.skip(async (t) => {
+  t.plan(1)
   class Server extends webgram.Server {
     constructor () {
       super()
@@ -31,7 +52,7 @@ test(async (t) => {
   c.send('test', 123, 456)  // this is probably before connected
 })
 
-test('saveload', async (t) => {
+test.skip('saveload', async (t) => {
   t.plan(1)
   class Server extends webgram.Server {
     constructor () {

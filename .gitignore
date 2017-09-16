@@ -8,3 +8,4 @@ static/assets/*
 .nyc*
 db.level
 db-test
+client-login-data.json
