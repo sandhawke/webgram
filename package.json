@@ -1,6 +1,6 @@
 {
   "name": "webgram",
-  "version": "0.0.6",
+  "version": "0.1.0",
   "description": "opinionated wrapper for websockets, simple yet powerful",
   "main": "index.js",
   "scripts": {
