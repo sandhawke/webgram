@@ -6,6 +6,9 @@
    other approaches.  Maybe we can this and index.js can call some
    common stuff.
 
+   This also has different logic around storing login state, and it
+   can auto-connect using document.location
+
    Retry logic is buggy right now -- it retries multiple times at once...
 
 */
