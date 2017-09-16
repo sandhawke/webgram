@@ -65,15 +65,9 @@ curl -X POST http://localhost:5678/shutdown
 
 ## ToDo / Ideas
 
-* separate userToken into deviceId / deviceSecret
-* conn.deviceId is always available, a low-ish sequence number
-* conn.load/save remain async; easy since we need the db
-* default db name change to webgram-secrets
 * improve retry
 * let binary frames be authstreams style, encrypted cbor; support binary data
-* in-browser testing in webgram suite (cf cbor test)
+* bretter in-browser testing, maybe using karma
 * tls of course
-* maybe server.on('$connect', conn => { conn.on('event', ...args) })
-* maybe _online instead of $online, etc
 
 

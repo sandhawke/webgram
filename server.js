@@ -61,6 +61,12 @@ class Server extends EventEmitter {
             console.error('badly formatted message ignored')
             return
           }
+          const type = message[0]
+          if (type[0] === '$') {
+            // don't let someone maybe trick us with $login or something
+            console.warn('received message starting with $.  Ignored:', type)
+            return
+          }
           debug('emitting', message[0], ...message.slice(1))
           // server.on(ev, conn, ...) style
           this.emit(message[0], remote, ...message.slice(1))
