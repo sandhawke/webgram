@@ -6,11 +6,12 @@ const webgram = require('.')
 test(async (t) => {
   t.plan(1)
   const s = new webgram.Server()
-  await s.start() // need to wait for address
-
-  // console.log('address', s.address)
+  await s.start()
   const c = new webgram.Client(s.address)
-  c.on('$pong', (text) => {
+  s.on('ping', (conn, ...args) => {
+    conn.send('pong', ...args)
+  })
+  c.on('pong', (text) => {
     console.log('test response to c1:', text)
     t.equal(text, 'hello')
     c.close()
@@ -18,10 +19,10 @@ test(async (t) => {
       t.end()
     })
   })
-  c.send('$ping', 'hello')  // this is probably before connected, so queued
+  c.send('ping', 'hello')  // this is probably before connected, so queued
 })
 
-test.skip(async (t) => {
+test(async (t) => {
   t.plan(1)
   class Server extends webgram.Server {
     constructor () {
@@ -49,6 +50,7 @@ test.skip(async (t) => {
   c.send('test', 123, 456)  // this is probably before connected
 })
 
+// old code -- move this over to session testing...
 test.skip('saveload', async (t) => {
   t.plan(1)
   class Server extends webgram.Server {

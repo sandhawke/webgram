@@ -69,5 +69,6 @@ curl -X POST http://localhost:5678/shutdown
 * let binary frames be authstreams style, encrypted cbor; support binary data
 * bretter in-browser testing, maybe using karma
 * tls of course
-
-
+* explain why this is better than shoe+dgram (if it really is)
+* add .ask as returning a promise, basically RPC, using 1-time event ids
+** with some way to handle timeout, but probably no retry

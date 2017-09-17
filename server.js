@@ -4,10 +4,9 @@ const http = require('http')
 const os = require('os')
 const express = require('express')
 const morgan = require('morgan')
-const debug = require('debug')('webgram-server')
+const debug = require('debug')('webgram:server')
 const EventEmitter = require('eventemitter3')
 const WebSocket = require('ws')
-const enableDestroy = require('server-destroy')
 
 class Server extends EventEmitter {
   constructor (config) {
@@ -17,6 +16,8 @@ class Server extends EventEmitter {
     if (!this.port) this.port = 0
     if (!this.logger) this.logger = morgan
     if (!this.root) this.root = './static'
+    if (!this.ConnectionClass) this.ConnectionClass = Connection
+    this.connections = new Set()
 
     if (!this.quiet) {
       this.app.use(this.logger('short'))
@@ -25,9 +26,41 @@ class Server extends EventEmitter {
     this.app.use(express.static(this.root))
     // {extensions: ['html', 'css']}))
 
-    this.on('$ping', (conn, ...args) => {
+    this.on('webgram-ping', (conn, ...args) => {
       console.log('got ping')
-      conn.send('$pong', ...args)
+      conn.send('webgram-pong', ...args)
+    })
+
+    this.answer = {}
+    this.on('ask', (conn, code, type, ...args) => {
+      debug('handling ask, code %j type %j args %o', code, type, args)
+      const handler = this.answer[type]
+      if (!handler) {
+        debug('no handler')
+        conn.send(code, 'no handler')
+        return
+      }
+      let result
+      try {
+        result = handler(...args)
+      } catch (err) {
+        debug('sync failure %j', err)
+        conn.send(code, err)
+      }
+      if (result instanceof Promise) {
+        result
+          .then((resp) => {
+            debug('async success %o', resp)
+            conn.send(code, null, resp)
+          })
+          .catch(err => {
+            debug('async failure %j', err)
+            conn.send(code, err)
+          })
+      } else {
+        debug('sync success %o', result)
+        conn.send(code, null, result)
+      }
     })
 
     // common bug for me is to forget to call server.start
@@ -36,11 +69,16 @@ class Server extends EventEmitter {
     }
   }
 
-  // only starts once, but you can call this many times to get the
-  // Promise of it being started
+  // okay to call repeatedly, for the promise of being started.  will
+  // only call innerStart once.
   start () {
     if (this.startPromise) return this.startPromise
-    this.startPromise = new Promise((resolve, reject) => {
+    this.startPromise = this.innerStart()
+    return this.startPromise
+  }
+
+  innerStart () {
+    return new Promise((resolve, reject) => {
       // if https...
       this.hServer = http.createServer(this.app)
       this.wServer = new WebSocket.Server({
@@ -49,7 +87,8 @@ class Server extends EventEmitter {
       this.wServer.on('connection', (ws, req) => {
         // connection
         debug('new connection', req.connection.remoteAddress)
-        const remote = new Connection(ws, this)
+        const remote = new this.ConnectionClass(ws, this)
+        this.connections.add(remote)
         this.emit('$opened', remote)
 
         ws.on('message', messageRaw => {
@@ -67,20 +106,20 @@ class Server extends EventEmitter {
             console.warn('received message starting with $.  Ignored:', type)
             return
           }
-          debug('emitting', message[0], ...message.slice(1))
+          debug('emitting %o', message)
           // server.on(ev, conn, ...) style
           this.emit(message[0], remote, ...message.slice(1))
           // conn.on(ev, ...) style
           remote.emit(...message)
         })
         ws.on('close', () => {
+          this.connections.delete(remote)
           this.emit('$closed', remote)
           remote.emit('$closed')
         })
       })
 
       this.hServer.listen(this.port, () => {
-        enableDestroy(this.hServer)
         this.assignedPort = this.hServer.address().port
         if (this.proxied) {
           this.siteURL = 'https://' + (this.hostname || os.hostname())
@@ -98,14 +137,13 @@ class Server extends EventEmitter {
         resolve()
       })
     })
-    return this.startPromise
   }
 
   stop () {
     return new Promise((resolve, reject) => {
       debug('stopping', this.siteURL)
-      // this.hServer.destroy()
-      // console.log("DESTROY")
+      // close each connection, too?
+      // maybe destroy it?   confusing.
       this.hServer.close(() => { resolve() })
     })
   }
@@ -121,7 +159,7 @@ class Connection extends EventEmitter {
     this.address = [socket._socket.remoteAddress, socket._socket.remotePort]
   }
   send (...args) {
-    debug('server trying to send', ...args)
+    debug('server trying to send %o', args)
     const text = JSON.stringify(args)
     try {
       this.socket.send(text)

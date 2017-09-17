@@ -3,7 +3,7 @@
 // this is the node.js version of the client.  See browser.js
 
 const EventEmitter = require('eventemitter3')
-const debug = require('debug')('webgram-client')
+const debug = require('debug')('webgram:client')
 
 class Client extends EventEmitter {
   constructor (address, options) {
@@ -14,6 +14,8 @@ class Client extends EventEmitter {
 
     Object.assign(this, options)
     this.buffer = []
+    this.askSeq = 0
+    this.timeout = 10000
 
     // Let subclass do:  this.socket = new WebSocket(this.address)
     this.makeSocket()
@@ -28,7 +30,7 @@ class Client extends EventEmitter {
         console.error('badly formatted message ignored')
         return
       }
-      debug('emitting', message[0], ...message.slice(1))
+      debug('emitting %o', message)
       this.emit(...message)
     })
     this.socket.addEventListener('open', () => {
@@ -46,6 +48,25 @@ class Client extends EventEmitter {
     } else {
       this.socket.send(JSON.stringify(args))
     }
+  }
+
+  ask (...args) {
+    return new Promise((resolve, reject) => {
+      const code = ++this.askSeq
+      const myTimer = setTimeout(() => {
+        this.send('cancel', code)
+        reject(Error('timeout'))
+      }, this.timeout)
+      this.send('ask', code, ...args)
+      this.once(code, (err, resp) => {
+        clearTimeout(myTimer)
+        if (err) {
+          reject(err)
+          return
+        }
+        resolve(resp)
+      })
+    })
   }
 
   close () {
