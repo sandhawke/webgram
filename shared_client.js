@@ -3,11 +3,14 @@
 // this is the node.js version of the client.  See browser.js
 
 const EventEmitter = require('eventemitter3')
-const debug = require('debug')('webgram:client')
+const debugModule = require('debug')
+
+let counter = 0
 
 class Client extends EventEmitter {
   constructor (address, options) {
     super()
+    const debug = debugModule('webgram_client_' + ++counter)
     if (address) {
       this.address = address
     }

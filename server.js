@@ -4,7 +4,7 @@ const http = require('http')
 const os = require('os')
 const express = require('express')
 const morgan = require('morgan')
-const debug = require('debug')('webgram:server')
+const debug = require('debug')('webgram_server')
 const EventEmitter = require('eventemitter3')
 const WebSocket = require('ws')
 
