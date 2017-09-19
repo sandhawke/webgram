@@ -42,7 +42,7 @@ class Server extends EventEmitter {
       }
       let result
       try {
-        result = handler(...args)
+        result = handler(conn, ...args)
       } catch (err) {
         debug('sync failure %j', err)
         conn.send(code, err)
@@ -89,6 +89,7 @@ class Server extends EventEmitter {
         debug('new connection', req.connection.remoteAddress)
         const remote = new this.ConnectionClass(ws, this)
         this.connections.add(remote)
+        // rename to $connect[ed], $connection-created ?
         this.emit('$opened', remote)
 
         ws.on('message', messageRaw => {

@@ -15,7 +15,7 @@ test('sync ask', async (t) => {
   t.plan(1)
   const [server, client] = await pair()
 
-  server.answer.incr = x => x + 1
+  server.answer.incr = (conn, x) => x + 1
   t.equal(await client.ask('incr', 51), 52)
 
   client.close()
@@ -27,7 +27,7 @@ test('async ask', async (t) => {
   t.plan(1)
   const [server, client] = await pair()
 
-  server.answer.fetch = async (...args) => {
+  server.answer.fetch = async (conn, ...args) => {
     const res = await fetch(...args)
     const text = await res.text()
     return text
