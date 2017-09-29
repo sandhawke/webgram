@@ -4,6 +4,7 @@
 
 const EventEmitter = require('eventemitter3')
 const debugModule = require('debug')
+const sessions = require('webgram-sessions')
 
 let counter = 0
 
@@ -42,7 +43,11 @@ class Client extends EventEmitter {
       }
       this.buffer = null
     })
-    if (this.login) this.login()
+
+    this.acceptsWebgramClientHooks = true
+    if (this.useSessions === undefined || this.useSessions) {
+      sessions.hook(this)
+    }
   }
 
   send (...args) {

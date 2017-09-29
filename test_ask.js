@@ -5,9 +5,9 @@ const webgram = require('.')
 const fetch = require('node-fetch')
 
 async function pair () {
-  const server = new webgram.Server()
+  const server = new webgram.Server({useSessions: false})
   await server.start()
-  const client = new webgram.Client(server.address)
+  const client = new webgram.Client(server.address, {useSessions: false})
   return [server, client]
 }
 

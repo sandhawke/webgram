@@ -9,3 +9,5 @@ static/assets/*
 db.level
 db-test
 client-login-data.json
+webgram-client-secrets.json
+webgram-server-secrets

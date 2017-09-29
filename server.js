@@ -7,6 +7,7 @@ const morgan = require('morgan')
 const debug = require('debug')('webgram_server')
 const EventEmitter = require('eventemitter3')
 const WebSocket = require('ws')
+const sessions = require('webgram-sessions')
 
 class Server extends EventEmitter {
   constructor (config) {
@@ -41,11 +42,18 @@ class Server extends EventEmitter {
         return
       }
       let result
+      function onErr (err) {
+        if (err.message && err.message.startsWith('client:')) {
+          conn.send(code, err)
+        } else {
+          throw err
+        }
+      }
       try {
         result = handler(conn, ...args)
       } catch (err) {
         debug('sync failure %j', err)
-        conn.send(code, err)
+        onErr(err)
       }
       if (result instanceof Promise) {
         result
@@ -55,7 +63,7 @@ class Server extends EventEmitter {
           })
           .catch(err => {
             debug('async failure %j', err)
-            conn.send(code, err)
+            onErr(err)
           })
       } else {
         debug('sync success %o', result)
@@ -66,6 +74,16 @@ class Server extends EventEmitter {
     // common bug for me is to forget to call server.start
     if (!this.manualStart) {
       process.nextTick(() => this.start())
+    }
+
+    this.acceptsWebgramServerHooks = true
+    if (this.useSessions === undefined) this.useSessions = true
+    if (this.useSessions) {
+      sessions.hook(this)
+    } else {
+      debug('WARNING: SESSIONS DISABLED at API request')
+      // maybe we should catch the session messages anyway and issue a
+      // console.warn then?   Suggests protocol mismatch.
     }
   }
 
@@ -89,8 +107,8 @@ class Server extends EventEmitter {
         debug('new connection', req.connection.remoteAddress)
         const remote = new this.ConnectionClass(ws, this)
         this.connections.add(remote)
-        // rename to $connect[ed], $connection-created ?
-        this.emit('$opened', remote)
+        // rename to $connect[ed], $connection-created ?  was $opened
+        this.emit('$connect', remote)
 
         ws.on('message', messageRaw => {
           debug('new message: ', messageRaw)
@@ -138,6 +156,17 @@ class Server extends EventEmitter {
         resolve()
       })
     })
+  }
+
+  // unsure which name to use!
+  //
+  // httpServer uses .close() but our semantic are different; we
+  // actually shut down running connections, they just stop accepting
+  // new ones.
+  //
+
+  close () {
+    return this.stop()
   }
 
   stop () {
