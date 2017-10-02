@@ -4,7 +4,7 @@ const WebSocket = require('ws')
 const SharedClient = require('./shared_client.js').Client
 
 class Client extends SharedClient {
-  makeSocket () {
+  async makeSocket () {
     this.socket = new WebSocket(this.address)
   }
 }

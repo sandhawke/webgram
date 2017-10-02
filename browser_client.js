@@ -5,13 +5,16 @@ const SharedClient = require('./shared_client.js').Client
 class Client extends SharedClient {
   constructor (address, options) {
     if (!address) {
+      // which method to use?   my testing setup needs indirection.
+
       address = document.location.origin.replace(/^http/, 'ws')
-      console.log('computed my call-home address as', address)
+
+      console.log('# computed my call-home address as', address)
     }
     super(address, options)
   }
 
-  makeSocket () {
+  async makeSocket () {
     this.socket = new window.WebSocket(this.address)
   }
 }

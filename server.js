@@ -10,9 +10,9 @@ const WebSocket = require('ws')
 const sessions = require('webgram-sessions')
 
 class Server extends EventEmitter {
-  constructor (config) {
+  constructor (options = {}) {
     super()
-    Object.assign(this, config)
+    Object.assign(this, options)
     if (!this.app) this.app = express()
     if (!this.port) this.port = 0
     if (!this.logger) this.logger = morgan
@@ -79,7 +79,7 @@ class Server extends EventEmitter {
     this.acceptsWebgramServerHooks = true
     if (this.useSessions === undefined) this.useSessions = true
     if (this.useSessions) {
-      sessions.hook(this)
+      sessions.hook(this, options.sessionOptions)
     } else {
       debug('WARNING: SESSIONS DISABLED at API request')
       // maybe we should catch the session messages anyway and issue a
@@ -151,7 +151,7 @@ class Server extends EventEmitter {
         this.address = this.siteURL.replace(/^http/, 'ws')
         debug('Running at: ', this.siteURL)
         if (!this.quiet) {
-          console.log('Site available at', this.siteURL)
+          console.log('# Site available at', this.siteURL)
         }
         resolve()
       })

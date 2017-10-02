@@ -12,7 +12,7 @@ test(async (t) => {
     conn.send('pong', ...args)
   })
   c.on('pong', (text) => {
-    console.log('test response to c1:', text)
+    console.log('# test response to c1:', text)
     t.equal(text, 'hello')
     c.close()
     s.stop().then(() => {
@@ -59,7 +59,7 @@ test('sessions from inside webgram', async (t) => {
     conn.send('pong', ...args)
   })
   c.on('pong', (text) => {
-    console.log('test response to c1:', text)
+    console.log('# test response to c1:', text)
     t.equal(text, 'hello')
     c.close()
     s.stop().then(() => {

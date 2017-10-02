@@ -9,9 +9,9 @@ const sessions = require('webgram-sessions')
 let counter = 0
 
 class Client extends EventEmitter {
-  constructor (address, options) {
+  constructor (address, options = {}) {
     super()
-    const debug = debugModule('webgram_client_' + ++counter)
+    this.debug = debugModule('webgram_client_' + ++counter)
     if (address) {
       this.address = address
     }
@@ -21,12 +21,24 @@ class Client extends EventEmitter {
     this.askSeq = 0
     this.timeout = 10000
 
-    // Let subclass do:  this.socket = new WebSocket(this.address)
-    this.makeSocket()
+    if (!this.socket) {
+      // Let subclass do:  this.socket = new WebSocket(this.address)
+      this.makeSocket()
+        .then(this.addListeners.bind(this))
+    } else {
+      this.addListeners()
+    }
 
+    this.acceptsWebgramClientHooks = true
+    if (this.useSessions === undefined || this.useSessions) {
+      sessions.hook(this)
+    }
+  }
+
+  addListeners () {
     this.socket.addEventListener('message', messageRaw => {
       messageRaw = messageRaw.data
-      debug('client sees new message', messageRaw)
+      this.debug('client sees new message', messageRaw)
       let message
       try {
         message = JSON.parse(messageRaw)
@@ -34,20 +46,16 @@ class Client extends EventEmitter {
         console.error('badly formatted message ignored')
         return
       }
-      debug('emitting %o', message)
+      this.debug('emitting %o', message)
       this.emit(...message)
     })
+
     this.socket.addEventListener('open', () => {
       for (let item of this.buffer) {
         this.socket.send(item)
       }
       this.buffer = null
     })
-
-    this.acceptsWebgramClientHooks = true
-    if (this.useSessions === undefined || this.useSessions) {
-      sessions.hook(this)
-    }
   }
 
   send (...args) {
