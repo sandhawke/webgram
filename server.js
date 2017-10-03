@@ -8,6 +8,7 @@ const debug = require('debug')('webgram_server')
 const EventEmitter = require('eventemitter3')
 const WebSocket = require('ws')
 const sessions = require('webgram-sessions')
+// const wtf = require('wtfnode')
 
 class Server extends EventEmitter {
   constructor (options = {}) {
@@ -172,9 +173,25 @@ class Server extends EventEmitter {
   stop () {
     return new Promise((resolve, reject) => {
       debug('stopping', this.siteURL)
+      // wtf.dump()
       // close each connection, too?
       // maybe destroy it?   confusing.
-      this.hServer.close(() => { resolve() })
+      for (const conn of this.connections) {
+        if (conn.close) {
+          debug('closing connnection from ', conn.address)
+          conn.close()
+        } else {
+          debug('conn has no .close %O', conn)
+        }
+      }
+      debug('closing server')
+      // wtf.dump()
+      this.hServer.close(() => {
+        debug('stopped', this.siteURL)
+        // lsof -i :xxxxxx
+        // wtf.dump()
+        resolve()
+      })
     })
   }
 }
@@ -205,6 +222,9 @@ class Connection extends EventEmitter {
         console.error('userData was:', this.userData)
       }
     }
+  }
+  close () {
+    return this.socket.close()
   }
 }
 

@@ -4,18 +4,88 @@ const SharedClient = require('./shared_client.js').Client
 
 class Client extends SharedClient {
   constructor (address, options) {
-    if (!address) {
-      // which method to use?   my testing setup needs indirection.
-
-      address = document.location.origin.replace(/^http/, 'ws')
-
-      console.log('# computed my call-home address as', address)
-    }
     super(address, options)
+    this.address = address
   }
 
-  async makeSocket () {
-    this.socket = new window.WebSocket(this.address)
+  tryRoot () {
+    return new Promise((resolve) => {
+      const a = document.location.origin.replace(/^http/, 'ws')
+      console.log('# computed my call-home address as', a)
+      try {
+        const s = new window.WebSocket(a)
+        s.addEventListener('open', () => {
+          resolve([a, s, 'direct'])
+        })
+      } catch (e) { }
+    })
+  }
+
+  tryViaConf () {
+    return new Promise((resolve) => {
+      window.fetch('/.well-known/webgram.json')
+        .then(response => {
+          response.json()
+            .then(conf => {
+              console.log('# fetched json ', JSON.stringify(conf))
+              const a = conf.wsAddress
+              console.log('# learned my call-home address is', a)
+              const s = new window.WebSocket(a)
+              s.addEventListener('open', () => {
+                console.log('ws open 1!')
+              })
+              s.addEventListener('open', () => {
+                console.log('ws open 2! resolving!')
+                resolve([a, s, 'indirect'])
+              })
+              s.addEventListener('open', () => {
+                console.log('ws open 3!')
+              })
+            })
+            .catch(err => {
+              console.log('# couldnt parse json response', err)
+            })
+        })
+        .catch(err => {
+          console.log('# couldnt fetch webgram.json', err)
+        })
+    })
+  }
+
+  sleep (n) {
+    return new Promise((resolve) => {
+      window.setTimeout(resolve, n)
+    })
+  }
+
+  whenOpen (onOpen) {
+    if (this.socket) {
+      switch (this.socket.readyState) {
+        case 0:
+          this.socket.addEventListener('open', onOpen)
+          break
+        case 1:
+          onOpen()
+          break
+        case 2:
+        case 3:
+          throw Error('passed socket thats already closed')
+      }
+    } else if (!this.address) {
+      Promise.race([this.tryRoot(), this.tryViaConf(), this.sleep(10)])
+        .then(arg => {
+          console.log('# race resolved %o', arg)
+          if (arg) {
+            [this.address, this.socket] = arg
+            onOpen()
+          } else {
+            throw Error('cant connect')
+          }
+        })
+    } else {
+      this.socket = new window.WebSocket(this.address)
+      this.socket.addEventListener('open', onOpen)
+    }
   }
 }
 

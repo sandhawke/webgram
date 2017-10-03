@@ -21,13 +21,14 @@ class Client extends EventEmitter {
     this.askSeq = 0
     this.timeout = 10000
 
-    if (!this.socket) {
-      // Let subclass do:  this.socket = new WebSocket(this.address)
-      this.makeSocket()
-        .then(this.addListeners.bind(this))
-    } else {
-      this.addListeners()
-    }
+    this.whenOpen(() => {
+      console.log('# whenOpen called, readyState=', this.socket.readyState)
+      this.socket.addEventListener('message', this.onMessage.bind(this))
+      for (let item of this.buffer) {
+        this.socket.send(item)
+      }
+      this.buffer = null
+    })
 
     this.acceptsWebgramClientHooks = true
     if (this.useSessions === undefined || this.useSessions) {
@@ -35,27 +36,18 @@ class Client extends EventEmitter {
     }
   }
 
-  addListeners () {
-    this.socket.addEventListener('message', messageRaw => {
-      messageRaw = messageRaw.data
-      this.debug('client sees new message', messageRaw)
-      let message
-      try {
-        message = JSON.parse(messageRaw)
-      } catch (e) {
-        console.error('badly formatted message ignored')
-        return
-      }
-      this.debug('emitting %o', message)
-      this.emit(...message)
-    })
-
-    this.socket.addEventListener('open', () => {
-      for (let item of this.buffer) {
-        this.socket.send(item)
-      }
-      this.buffer = null
-    })
+  onMessage (messageRaw) {
+    messageRaw = messageRaw.data
+    this.debug('client sees new message', messageRaw)
+    let message
+    try {
+      message = JSON.parse(messageRaw)
+    } catch (e) {
+      console.error('badly formatted message ignored')
+      return
+    }
+    this.debug('emitting %o', message)
+    this.emit(...message)
   }
 
   send (...args) {
