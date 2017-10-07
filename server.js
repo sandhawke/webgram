@@ -29,7 +29,7 @@ class Server extends EventEmitter {
     // {extensions: ['html', 'css']}))
 
     this.on('webgram-ping', (conn, ...args) => {
-      console.log('got ping')
+      debug('got ping')
       conn.send('webgram-pong', ...args)
     })
 
@@ -170,7 +170,10 @@ class Server extends EventEmitter {
     return this.stop()
   }
 
+  foobar () { return 'FOOBAR 123' }
+
   stop () {
+    debug('stop called, returning promise')
     return new Promise((resolve, reject) => {
       debug('stopping', this.siteURL)
       // wtf.dump()
