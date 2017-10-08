@@ -13,13 +13,16 @@ const browserify = require('browserify')
 const webgram = require('.')
 const launcher = require('james-browser-launcher')
 const util = require('util')
+const path = require('path')
 // const wtf = require('wtfnode')
 const debug = require('debug')('webgram_browsertester')
 
 let count = 0
 
-class Server extends webgram.Server {
-  constructor (module, options = {}) {
+class Runner {
+  constructor (module, newServer, options = {}) {
+    Object.assign(this, options)
+    
     // the current sessions server end isn't happy ("LOCK: already held
     // by process") running multiple times in the same process because
     // of leveldb.  Workaround by having a new tmp db per process if
@@ -27,15 +30,16 @@ class Server extends webgram.Server {
     //
     // NEEDS to be disable in client, too, session setup just hangs!!
     //
-    if (options.useSessions === undefined) options.useSessions = false
+    if (options.useSessions === undefined
+        && options.sessionsOptions === undefined) options.useSessions = false
     if (options.quiet === undefined) options.quiet = true
-    super(options)   // does: Object.assign(this, options)
+    this.server = newServer(options) 
 
     debug(`creating TestServer to run ${module} in browsers`)
-    this.mine = browserify('callhome')
+    this.mine = browserify(path.join(__dirname, 'callhome'))
     this.b = browserify(module)
 
-    this.app.get('/', (req, res) => {
+    this.server.app.get('/', (req, res) => {
       res.send(
         `<!doctype html>
 <html lang="en">
@@ -44,26 +48,26 @@ class Server extends webgram.Server {
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Testing</title>
 <script type="text/javascript">
-window.serverAddress='${this.address}'
+window.serverAddress='${this.server.address}'
 console.log('# running webgram TestServer client, server=', window.serverAddress)
 </script>
 <script type="text/javascript" src="/callhome.js"></script>
 <script type="text/javascript" src="/bundle.js"></script>
 </head>
 <body>
-<p>js not working?</p>
+<p>Running browser tests from ${module}</p>
 </body>`)
     })
 
-    this.app.get('/bundle.js', (req, res) => {
+    this.server.app.get('/bundle.js', (req, res) => {
       this.b.bundle().pipe(res)
     })
 
-    this.app.get('/callhome.js', (req, res) => {
+    this.server.app.get('/callhome.js', (req, res) => {
       this.mine.bundle().pipe(res)
     })
 
-    this.on('output', (conn, ...parts) => {
+    this.server.on('output', (conn, ...parts) => {
       debug('output was: ', parts)
       let line = util.format(...parts)
 
@@ -85,7 +89,7 @@ console.log('# running webgram TestServer client, server=', window.serverAddress
       console.log(line)
     })
 
-    this.on('end', async () => {
+    this.server.on('end', async () => {
       debug('client said END')
       debug('killing browser, which should also kill server')
       await this.browserInstance.stop()
@@ -98,7 +102,7 @@ console.log('# running webgram TestServer client, server=', window.serverAddress
       launcher((err, launch) => {
         if (err) { reject(err); return }
 
-        launch(this.siteURL, browserName, (err, instance) => {
+        launch(this.server.siteURL, browserName, (err, instance) => {
           if (err) { reject(err); return }
 
           this.browserInstance = instance
@@ -112,7 +116,7 @@ console.log('# running webgram TestServer client, server=', window.serverAddress
               resolve()
             } else {
               console.log('# and server still running, so stop it')
-              this.stop().then(resolve)
+              this.server.stop().then(resolve)
             }
           })
         })
@@ -121,16 +125,19 @@ console.log('# running webgram TestServer client, server=', window.serverAddress
   }
 }
 
-async function run (module, options) {
+async function run (module, options = {}) {
   console.log('TAP version 13')
   launcher.detect(async (avail) => {
     debug('avail %O', avail)
-    for (const browser of avail) {
+    if (!options.browsers) options.browsers = avail.map(b => b.name)
+    for (const browser of options.browsers) {
       console.log('# running tests in browser %j', browser)
-      // debug('trying in %o', browser)
-      const s = new Server(module, options)
-      await s.start()
-      await s.runClient(browser.name)
+      let newServer = options.newServer
+      if (!newServer) newServer = (...a) => new webgram.Server(...a)
+      const s = new Runner(module, newServer, options)
+      if (options.serverHook) options.serverHook(s.server)
+      await s.server.start()
+      await s.runClient(browser)
       console.log('# done running tests in browser %s', browser.name)
     }
     console.log('# done running browser tests, servers should shut down')
