@@ -41,8 +41,11 @@ class Client extends EventEmitter {
   }
 
   onError (err) {
-    console.log('webgram/shared_client error')
-    throw err
+    if (this.listeners('error').length) {
+      this.emit('error', err)
+    } else {
+      throw err
+    }
   }
 
   onMessage (messageRaw) {
