@@ -21,19 +21,28 @@ class Client extends EventEmitter {
     this.askSeq = 0
     this.timeout = 10000
 
-    this.whenOpen(() => {
-      console.log('# whenOpen called, readyState=', this.socket.readyState)
-      this.socket.addEventListener('message', this.onMessage.bind(this))
-      for (let item of this.buffer) {
-        this.socket.send(item)
-      }
-      this.buffer = null
-    })
+    this.connect() // ends up calling back to onOpen later
 
     this.acceptsWebgramClientHooks = true
     if (this.useSessions === undefined || this.useSessions) {
-      sessions.hook(this)
+      sessions.hook(this, options)
     }
+  }
+
+  // called by subclass when connection is made
+  onOpen () {
+    // console.log('# whenOpen called, readyState=', this.socket.readyState)
+    this.socket.addEventListener('message', this.onMessage.bind(this))
+    this.socket.addEventListener('error', this.onError.bind(this))
+    for (let item of this.buffer) {
+      this.socket.send(item)
+    }
+    this.buffer = null
+  }
+
+  onError (err) {
+    console.log('webgram/shared_client error')
+    throw err
   }
 
   onMessage (messageRaw) {
@@ -78,6 +87,7 @@ class Client extends EventEmitter {
   }
 
   close () {
+    this.closed = true
     this.socket.close()
   }
 }

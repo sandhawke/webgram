@@ -22,7 +22,7 @@ let count = 0
 class Runner {
   constructor (module, newServer, options = {}) {
     Object.assign(this, options)
-    
+
     // the current sessions server end isn't happy ("LOCK: already held
     // by process") running multiple times in the same process because
     // of leveldb.  Workaround by having a new tmp db per process if
@@ -30,10 +30,10 @@ class Runner {
     //
     // NEEDS to be disable in client, too, session setup just hangs!!
     //
-    if (options.useSessions === undefined
-        && options.sessionsOptions === undefined) options.useSessions = false
+    if (options.useSessions === undefined &&
+        options.sessionsOptions === undefined) options.useSessions = false
     if (options.quiet === undefined) options.quiet = true
-    this.server = newServer(options) 
+    this.server = newServer(options)
 
     debug(`creating TestServer to run ${module} in browsers`)
     this.mine = browserify(path.join(__dirname, 'callhome'))

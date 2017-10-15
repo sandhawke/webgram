@@ -59,7 +59,8 @@ class Client extends SharedClient {
     })
   }
 
-  whenOpen (onOpen) {
+  connect () {
+    const onOpen = () => this.onOpen()
     if (this.socket) {
       switch (this.socket.readyState) {
         case 0:
