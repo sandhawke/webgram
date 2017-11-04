@@ -55,7 +55,7 @@ console.log('# running webgram TestServer client, server=', window.serverAddress
 <script type="text/javascript" src="/bundle.js"></script>
 </head>
 <body>
-<p>Running browser tests from ${module}</p>
+<h1>Running browser tests from ${module}</h1>
 </body>`)
     })
 

@@ -3,6 +3,7 @@
 const http = require('http')
 const os = require('os')
 const express = require('express')
+
 const morgan = require('morgan')
 const debug = require('debug')('webgram_server')
 const EventEmitter = require('eventemitter3')
@@ -15,12 +16,20 @@ class Server extends EventEmitter {
     super()
     Object.assign(this, options)
     if (!this.app) this.app = express()
-    if (!this.port) this.port = 0
     if (!this.logger) this.logger = morgan
     if (!this.root) this.root = './static'
     if (!this.ConnectionClass) this.ConnectionClass = Connection
     this.connections = new Set()
 
+    if (this.port === undefined) this.port = process.env.PORT
+    if (this.port === undefined) this.port = 0 // assigned by OS
+
+    if (!this.hostname) {
+      this.hostname = process.env.HOSTNAME
+      if (this.hostname) this.proxied = true
+    }
+    if (!this.hostname) this.hostname = os.hostname() // not usually good
+    
     if (!this.quiet) {
       this.app.use(this.logger('short'))
     }
@@ -142,9 +151,9 @@ class Server extends EventEmitter {
       this.hServer.listen(this.port, () => {
         this.assignedPort = this.hServer.address().port
         if (this.proxied) {
-          this.siteURL = 'https://' + (this.hostname || os.hostname())
+          this.siteURL = 'https://' + this.hostname
         } else {
-          this.siteURL = 'http://' + (this.hostname || os.hostname())
+          this.siteURL = 'http://' + this.hostname
           if (this.assignedPort !== 80) {
             this.siteURL += ':' + this.assignedPort
           }
