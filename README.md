@@ -1,10 +1,10 @@
 An opinionated wrapper for websockets.
 
-My opinion:
+My opinion on websockets:
 * The reliable-stream socket metaphor gets in the way, because it's not truly reliable, given the reality of the internet and remote issues. It's simpler to just think in terms of sending and receiving messages on a best-effort basis
 * We wrap the httpServer stuff, but hopefully expose the parts you need, for your own express routes, etc.  (TODO: https, with easy/automatic letsEncrypt usage when running as root.)
 
-Authentication is available via separate package [webgram-logins](../webgram-logins)
+Session state is managed by a separate package [webgram-sessions](../webgram-sessions).
 
 Typical client can be very simple:
 
@@ -34,6 +34,9 @@ const webgram = require('webgram')
 
 // port defaults to new-random-port if not specified, good for testing
 const s = new webgram.Server({port: 5678})
+
+// If you want to pay attention to connections (but you probably
+// want to use sessions instead)
 server.on('$opened', conn => {
    conn.on('$closed', () => {
     ...
@@ -63,12 +66,16 @@ s.start()
 curl -X POST http://localhost:5678/shutdown
 ```
 
-## ToDo / Ideas
+## Future work
 
+* document ask()
+* integrate documentation with sessions
+* bring in user authentication, maybe
 * improve retry
-* let binary frames be authstreams style, encrypted cbor; support binary data
-* bretter in-browser testing, maybe using karma
-* tls of course
-* explain why this is better than shoe+dgram (if it really is)
-* add .ask as returning a promise, basically RPC, using 1-time event ids
-** with some way to handle timeout, but probably no retry
+* let binary frames be authstreams style (encrypted cbor); support binary data
+* TLS of course
+* explain why this is better than shoe+dgram
+
+## Credits and Disclaimer
+
+This material is based upon work supported by the National Science Foundation under Grant No. 1313789.  Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the National Science Foundation.

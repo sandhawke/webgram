@@ -29,7 +29,7 @@ class Server extends EventEmitter {
       if (this.hostname) this.proxied = true
     }
     if (!this.hostname) this.hostname = os.hostname() // not usually good
-    
+
     if (!this.quiet) {
       this.app.use(this.logger('short'))
     }
