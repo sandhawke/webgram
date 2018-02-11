@@ -4,7 +4,7 @@ My opinion on websockets:
 * The reliable-stream socket metaphor gets in the way, because it's not truly reliable, given the reality of the internet and remote issues. It's simpler to just think in terms of sending and receiving messages on a best-effort basis
 * We wrap the httpServer stuff, but hopefully expose the parts you need, for your own express routes, etc.  (TODO: https, with easy/automatic letsEncrypt usage when running as root.)
 
-Session state is managed by a separate package [webgram-sessions](../webgram-sessions).
+Session state is managed by a separate package [webgram-sessions](https://github.com/sandhawke/webgram-sessions).
 
 Typical client can be very simple:
 
