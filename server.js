@@ -158,6 +158,9 @@ class Server extends EventEmitter {
             this.siteURL += ':' + this.assignedPort
           }
         }
+        if (process.env.SITEURL) {
+          this.siteURL = process.env.SITEURL
+        }
         this.address = this.siteURL.replace(/^http/, 'ws')
         debug('Running at: ', this.siteURL)
         if (!this.quiet) {
